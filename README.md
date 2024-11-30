@@ -1,9 +1,11 @@
-# AHD2-PackageTemplate
-UnityPackage开发模板
+# **[AHD2-URP-Improved](https://github.com/ahd2/AHD2-URP-Improved)**
+基于URP(Unity2021.3)的个人修改管线。
 
-## 使用方法
+## 基本信息
 
-* 在Github根据本模板仓库新建一个仓库。
-* 把新建仓库克隆到unity项目的package文件夹下。
-* 修改package.json和ReadMe。
-* 关于changelog目前打算使用标签管理来代替。
+* 基础URP版本v12.1
+* 基础Unity版本2021.3
+
+## 修改部分
+
+* 
