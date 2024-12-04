@@ -80,6 +80,9 @@ namespace UnityEngine.Rendering.Universal
 
             [Reload("Shaders/PostProcessing/FinalPost.shader")]
             public Shader finalPostPassPS;
+            
+            [Reload("Shaders/PostProcessing/GaussianBlur.shader")]
+            public Shader gaussianBlurPS;
         }
 
         [Serializable, ReloadGroup]

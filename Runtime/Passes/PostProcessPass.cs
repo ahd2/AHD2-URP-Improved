@@ -46,6 +46,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         ColorAdjustments m_ColorAdjustments;
         Tonemapping m_Tonemapping;
         FilmGrain m_FilmGrain;
+        GaussianBlur m_GaussianBlur;//自定义：高斯模糊
 
         // Misc
         const int k_MaxPyramidSize = 16;
@@ -239,6 +240,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_ColorAdjustments = stack.GetComponent<ColorAdjustments>();
             m_Tonemapping = stack.GetComponent<Tonemapping>();
             m_FilmGrain = stack.GetComponent<FilmGrain>();
+            m_GaussianBlur = stack.GetComponent<GaussianBlur>();//获取自定义高斯模糊组件
             m_UseDrawProcedural = renderingData.cameraData.xr.enabled;
             m_UseFastSRGBLinearConversion = renderingData.postProcessingData.useFastSRGBLinearConversion;
 
@@ -504,6 +506,15 @@ namespace UnityEngine.Rendering.Universal.Internal
                 {
                     using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.Bloom)))
                         SetupBloom(cmd, GetSource(), m_Materials.uber);
+                }
+                
+                // 自定义高斯模糊，在Bloom后
+                bool gaussianBlurActive = m_GaussianBlur.IsActive();
+                if (gaussianBlurActive)
+                {
+                    using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.GaussianBlur)))
+                        SetupGaussianBlur(cmd, GetSource(), m_Materials.uber);
+                        //SetupBloom(cmd, GetSource(), m_Materials.uber);
                 }
 
                 // Setup other effects constants
@@ -1216,6 +1227,15 @@ namespace UnityEngine.Rendering.Universal.Internal
         }
 
         #endregion
+        
+        #region GaussianBlur
+
+        void SetupGaussianBlur(CommandBuffer cmd, RenderTargetIdentifier source, Material uberMaterial)
+        {
+            
+        }
+
+        #endregion
 
         #region Lens Distortion
 
@@ -1586,6 +1606,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             public readonly Material uber;
             public readonly Material finalPass;
             public readonly Material lensFlareDataDriven;
+            public readonly Material gaussianBlur;
 
             public MaterialLibrary(PostProcessData data)
             {
@@ -1601,6 +1622,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 uber = Load(data.shaders.uberPostPS);
                 finalPass = Load(data.shaders.finalPostPassPS);
                 lensFlareDataDriven = Load(data.shaders.LensFlareDataDrivenPS);
+                gaussianBlur = Load(data.shaders.gaussianBlurPS);
             }
 
             Material Load(Shader shader)
@@ -1631,6 +1653,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 CoreUtils.Destroy(easu);
                 CoreUtils.Destroy(uber);
                 CoreUtils.Destroy(finalPass);
+                CoreUtils.Destroy(gaussianBlur);
             }
         }
 

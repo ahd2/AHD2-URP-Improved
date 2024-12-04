@@ -910,6 +910,7 @@ namespace UnityEngine.Rendering.Universal
         PaniniProjection,
         UberPostProcess,
         Bloom,
+        GaussianBlur,//自定义
         LensFlareDataDriven,
         MotionVectors,
 
