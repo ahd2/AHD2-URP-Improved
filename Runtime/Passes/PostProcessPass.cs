@@ -508,14 +508,14 @@ namespace UnityEngine.Rendering.Universal.Internal
                         SetupBloom(cmd, GetSource(), m_Materials.uber);
                 }
                 
-                // 自定义高斯模糊，在Bloom后
-                bool gaussianBlurActive = m_GaussianBlur.IsActive();
-                if (gaussianBlurActive)
-                {
-                    using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.GaussianBlur)))
-                        SetupGaussianBlur(cmd, GetSource(), m_Materials.uber);
-                        //SetupBloom(cmd, GetSource(), m_Materials.uber);
-                }
+                // // 自定义高斯模糊，在Bloom后
+                // bool gaussianBlurActive = m_GaussianBlur.IsActive();
+                // if (gaussianBlurActive)
+                // {
+                //     using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.GaussianBlur)))
+                //         SetupGaussianBlur(cmd, GetSource(), GetDestination(),  m_Materials.gaussianBlur);
+                //         //SetupBloom(cmd, GetSource(), m_Materials.uber);
+                // }
 
                 // Setup other effects constants
                 SetupLensDistortion(m_Materials.uber, isSceneViewCamera);
@@ -597,14 +597,39 @@ namespace UnityEngine.Rendering.Universal.Internal
                 else
 #endif
                 {
-                    cmd.SetRenderTarget(cameraTarget, colorLoadAction, RenderBufferStoreAction.Store, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-                    cameraData.renderer.ConfigureCameraTarget(cameraTarget, cameraTarget);
-                    cmd.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
+                    bool gaussianBlurActive = m_GaussianBlur.IsActive();
+                    if (gaussianBlurActive)
+                    {
+                        //如果激活高斯模糊，就先不直接画到相机RT上。而是先画到一个RT，做模糊后，再Blit到相机目标。
+                        using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.GaussianBlur)))
+                        {
+                            cmd.Blit(null ,GetSource(),m_Materials.uber);
+                            SetupGaussianBlur(cmd, GetSource(), GetDestination(),  m_Materials.gaussianBlur);
+                            //SetupBloom(cmd, GetSource(), m_Materials.uber);
+                            
+                            cmd.SetRenderTarget(cameraTarget, colorLoadAction, RenderBufferStoreAction.Store, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+                            cameraData.renderer.ConfigureCameraTarget(cameraTarget, cameraTarget);
+                            cmd.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
 
-                    if ((m_Destination == RenderTargetHandle.CameraTarget && !m_UseSwapBuffer) || (m_ResolveToScreen && m_UseSwapBuffer))
-                        cmd.SetViewport(cameraData.pixelRect);
+                            if ((m_Destination == RenderTargetHandle.CameraTarget && !m_UseSwapBuffer) || (m_ResolveToScreen && m_UseSwapBuffer))
+                                cmd.SetViewport(cameraData.pixelRect);
+                        
+                            //最终Blit，画到相机本体Target上
+                            cmd.Blit(GetDestination(), cameraTarget);
+                        }
+                    }
+                    else
+                    {
+                        cmd.SetRenderTarget(cameraTarget, colorLoadAction, RenderBufferStoreAction.Store, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+                        cameraData.renderer.ConfigureCameraTarget(cameraTarget, cameraTarget);
+                        cmd.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
 
-                    cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, m_Materials.uber);
+                        if ((m_Destination == RenderTargetHandle.CameraTarget && !m_UseSwapBuffer) || (m_ResolveToScreen && m_UseSwapBuffer))
+                            cmd.SetViewport(cameraData.pixelRect);
+                        
+                        //最终Blit，画到相机本体Target上
+                        cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, m_Materials.uber);
+                    }
 
                     // TODO: Implement swapbuffer in 2DRenderer so we can remove this
                     // For now, when render post-processing in the middle of the camera stack (not resolving to screen)
@@ -1230,9 +1255,30 @@ namespace UnityEngine.Rendering.Universal.Internal
         
         #region GaussianBlur
 
-        void SetupGaussianBlur(CommandBuffer cmd, RenderTargetIdentifier source, Material uberMaterial)
+        void SetupGaussianBlur(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier dst, Material gaussianBlurMaterial)
         {
+            // 同样用一半分辨率的RT来模糊
+            int tw = m_Descriptor.width >> 1;
+            int th = m_Descriptor.height >> 1;
             
+            //毛星云大佬方式
+            //申请两个RT（低分辨率RT）
+            cmd.GetTemporaryRT(ShaderConstants._TempTarget, tw, th, 0, FilterMode.Bilinear);
+            cmd.GetTemporaryRT(ShaderConstants._TempTarget2, tw, th, 0, FilterMode.Bilinear);
+            
+            //降采样
+            cmd.Blit(source, ShaderConstants._TempTarget);
+            
+            //模糊
+            cmd.Blit(ShaderConstants._TempTarget, ShaderConstants._TempTarget2, gaussianBlurMaterial);
+            cmd.Blit(ShaderConstants._TempTarget2, ShaderConstants._TempTarget, gaussianBlurMaterial);
+            
+            //升采样
+            cmd.Blit(ShaderConstants._TempTarget, dst);
+            
+            //释放RT（不懂这是正确方式不）
+            cmd.ReleaseTemporaryRT(ShaderConstants._TempTarget);
+            cmd.ReleaseTemporaryRT(ShaderConstants._TempTarget2);
         }
 
         #endregion
