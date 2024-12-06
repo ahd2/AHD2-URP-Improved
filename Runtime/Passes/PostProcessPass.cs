@@ -603,9 +603,10 @@ namespace UnityEngine.Rendering.Universal.Internal
                         //如果激活高斯模糊，就先不直接画到相机RT上。而是先画到一个RT，做模糊后，再Blit到相机目标。
                         using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.GaussianBlur)))
                         {
-                            cmd.Blit(null ,GetSource(),m_Materials.uber);
+                            cmd.Blit(GetSource() ,GetDestination(),m_Materials.uber);
+                            Swap(ref renderer);
                             SetupGaussianBlur(cmd, GetSource(), GetDestination(),  m_Materials.gaussianBlur);
-                            //SetupBloom(cmd, GetSource(), m_Materials.uber);
+                            Swap(ref renderer);
                             
                             cmd.SetRenderTarget(cameraTarget, colorLoadAction, RenderBufferStoreAction.Store, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
                             cameraData.renderer.ConfigureCameraTarget(cameraTarget, cameraTarget);
@@ -615,7 +616,8 @@ namespace UnityEngine.Rendering.Universal.Internal
                                 cmd.SetViewport(cameraData.pixelRect);
                         
                             //最终Blit，画到相机本体Target上
-                            cmd.Blit(GetDestination(), cameraTarget);
+                            //cmd.Blit(GetDestination(), cameraTarget);
+                            cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, m_BlitMaterial);
                         }
                     }
                     else
