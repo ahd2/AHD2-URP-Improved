@@ -1,52 +1,92 @@
 Shader "Hidden/Universal Render Pipeline/GaussianBlur"
 {
-    Properties
+	Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
     }
+    HLSLINCLUDE
+	#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+	#include "Packages/com.unity.render-pipelines.universal/Shaders/PostProcessing/Common.hlsl"
+	TEXTURE2D(_MainTex);    SAMPLER(sampler_MainTex);
+	half4 _BlurOffset;
+
+	float2 TransformTriangleVertexToUV(float2 vertex)
+	{
+	    float2 uv = (vertex + 1.0) * 0.5;
+	    return uv;
+	}
+
+	struct a2v
+	{
+	    float3 vertex : POSITION;
+	};
+	
+	struct v2f
+	{
+		float4 pos: POSITION;
+		float2 uv: TEXCOORD0;	
+		float4 uv01: TEXCOORD1;
+		float4 uv23: TEXCOORD2;
+		float4 uv45: TEXCOORD3;
+	};
+	
+	v2f VertGaussianBlur(a2v v)
+	{
+		v2f o;
+		o.pos = float4(v.vertex.xy, 0, 1);
+		
+		o.uv.xy = TransformTriangleVertexToUV(o.pos.xy);
+		
+		#if UNITY_UV_STARTS_AT_TOP
+			o.uv = o.uv * float2(1.0, -1.0) + float2(0.0, 1.0);
+		#endif
+		
+		o.uv01 = o.uv.xyxy + _BlurOffset.xyxy * float4(1, 1, -1, -1);
+		o.uv23 = o.uv.xyxy + _BlurOffset.xyxy * float4(1, 1, -1, -1) * 2.0;
+		o.uv45 = o.uv.xyxy + _BlurOffset.xyxy * float4(1, 1, -1, -1) * 6.0;
+		
+		return o;
+	}
+	
+	float4 FragGaussianBlur(v2f i): SV_Target
+	{
+		half4 color = float4(0, 0, 0, 0);
+		
+		color += 0.40 * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+		color += 0.15 * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv01.xy);
+		color += 0.15 * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv01.zw);
+		color += 0.10 * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv23.xy);
+		color += 0.10 * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv23.zw);
+		color += 0.05 * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv45.xy);
+		color += 0.05 * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv45.zw);
+		
+		return color;
+	}
+	
+	float4 FragCombine(Varyings i): SV_Target
+	{
+		return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv) * 0.9;
+	}
+	ENDHLSL
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
-        LOD 100
-
+        //Cull Off ZWrite Off ZTest Always
         Pass
-        {
-            CGPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-
-            #include "UnityCG.cginc"
-
-            struct appdata
-            {
-                float4 vertex : POSITION;
-                float2 uv : TEXCOORD0;
-            };
-
-            struct v2f
-            {
-                float2 uv : TEXCOORD0;
-                float4 vertex : SV_POSITION;
-            };
-
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-
-            v2f vert (appdata v)
-            {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                return o;
-            }
-
-            fixed4 frag (v2f i) : SV_Target
-            {
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                return col * 0.5;
-            }
-            ENDCG
-        }
+		{
+			HLSLPROGRAM
+			#pragma vertex VertGaussianBlur
+			#pragma fragment FragGaussianBlur
+			ENDHLSL
+			
+		}
+		
+		Pass
+		{
+			HLSLPROGRAM
+			#pragma vertex FullscreenVert
+			#pragma fragment FragCombine
+			ENDHLSL
+			
+		}
     }
 }
