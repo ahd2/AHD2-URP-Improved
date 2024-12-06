@@ -10,6 +10,10 @@ namespace UnityEngine.Rendering.Universal
         [Tooltip("模糊迭代次数(勾选后模糊才生效)")]
         //overrideState设置为true，才可以实现这个组件初始化的时候就是被勾选状态的效果。
         public ClampedIntParameter iterations = new ClampedIntParameter(0, 1, 16, true);
+        
+        [Tooltip("模糊半径")]
+        public ClampedFloatParameter blurRadius = new ClampedFloatParameter(1.0f, 1f, 6.0f);
+
 
         public bool IsActive() => iterations.value > 0f;
 
