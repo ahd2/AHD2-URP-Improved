@@ -8,42 +8,55 @@ Shader "Hidden/Universal Render Pipeline/GaussianBlur"
 	#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 	#include "Packages/com.unity.render-pipelines.universal/Shaders/PostProcessing/Common.hlsl"
 	TEXTURE2D(_MainTex);    SAMPLER(sampler_MainTex);
-	half4 _BlurOffset;
-
-	float2 TransformTriangleVertexToUV(float2 vertex)
-	{
-	    float2 uv = (vertex + 1.0) * 0.5;
-	    return uv;
-	}
+	half _BlurOffset;
 
 	struct a2v
 	{
-	    float3 vertex : POSITION;
+	    float4 positionOS : POSITION;
+		float2 uv : TEXCOORD0;
 	};
 	
 	struct v2f
 	{
-		float4 pos: POSITION;
+		float4 pos: SV_POSITION;
 		float2 uv: TEXCOORD0;	
 		float4 uv01: TEXCOORD1;
 		float4 uv23: TEXCOORD2;
 		float4 uv45: TEXCOORD3;
 	};
 	
-	v2f VertGaussianBlur(a2v v)
+	v2f VertGaussianBlurW(a2v v)
 	{
 		v2f o;
-		o.pos = float4(v.vertex.xy, 0, 1);
+		o.pos = TransformObjectToHClip(v.positionOS.xyz);
 		
-		o.uv.xy = TransformTriangleVertexToUV(o.pos.xy);
+		o.uv.xy = v.uv;
 		
 		#if UNITY_UV_STARTS_AT_TOP
 			o.uv = o.uv * float2(1.0, -1.0) + float2(0.0, 1.0);
 		#endif
 		
-		o.uv01 = o.uv.xyxy + _BlurOffset.xyxy * float4(1, 1, -1, -1);
-		o.uv23 = o.uv.xyxy + _BlurOffset.xyxy * float4(1, 1, -1, -1) * 2.0;
-		o.uv45 = o.uv.xyxy + _BlurOffset.xyxy * float4(1, 1, -1, -1) * 6.0;
+		o.uv01 = o.uv.xyxy + _BlurOffset * float4(1, 0, -1, 0);
+		o.uv23 = o.uv.xyxy + _BlurOffset * float4(1, 0, -1, 0) * 2.0;
+		o.uv45 = o.uv.xyxy + _BlurOffset * float4(1, 0, -1, 0) * 6.0;
+		
+		return o;
+	}
+
+	v2f VertGaussianBlurH(a2v v)
+	{
+		v2f o;
+		o.pos = TransformObjectToHClip(v.positionOS.xyz);
+		
+		o.uv.xy = v.uv;
+		
+		#if UNITY_UV_STARTS_AT_TOP
+			o.uv = o.uv * float2(1.0, -1.0) + float2(0.0, 1.0);
+		#endif
+		
+		o.uv01 = o.uv.xyxy + _BlurOffset * float4(0, 1, 0, -1);
+		o.uv23 = o.uv.xyxy + _BlurOffset * float4(0, 1, 0, -1) * 2.0;
+		o.uv45 = o.uv.xyxy + _BlurOffset * float4(0, 1, 0, -1) * 6.0;
 		
 		return o;
 	}
@@ -74,7 +87,16 @@ Shader "Hidden/Universal Render Pipeline/GaussianBlur"
         Pass
 		{
 			HLSLPROGRAM
-			#pragma vertex VertGaussianBlur
+			#pragma vertex VertGaussianBlurW
+			#pragma fragment FragGaussianBlur
+			ENDHLSL
+			
+		}
+
+		Pass
+		{
+			HLSLPROGRAM
+			#pragma vertex VertGaussianBlurH
 			#pragma fragment FragGaussianBlur
 			ENDHLSL
 			

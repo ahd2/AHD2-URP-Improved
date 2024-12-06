@@ -1275,11 +1275,11 @@ namespace UnityEngine.Rendering.Universal.Internal
             for (int i = 0; i < m_GaussianBlur.iterations.value; i++)
             {
                 //先横向模糊
-                gaussianBlurMaterial.SetVector("_BlurOffset", new Vector4(1,0,0,0));
+                gaussianBlurMaterial.SetFloat(ShaderConstants._BlurOffset, 1.0f / tw);
                 cmd.Blit(ShaderConstants._TempTarget, ShaderConstants._TempTarget2, gaussianBlurMaterial, 0);
                 //再纵向模糊
-                gaussianBlurMaterial.SetVector("_BlurOffset", new Vector4(0,1,0,0));
-                cmd.Blit(ShaderConstants._TempTarget2, ShaderConstants._TempTarget, gaussianBlurMaterial, 0);
+                gaussianBlurMaterial.SetFloat(ShaderConstants._BlurOffset, 1.0f / th);
+                cmd.Blit(ShaderConstants._TempTarget2, ShaderConstants._TempTarget, gaussianBlurMaterial, 1);
             }
             
             //升采样
@@ -1774,6 +1774,8 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             public static int[] _BloomMipUp;
             public static int[] _BloomMipDown;
+            
+            public static readonly int _BlurOffset = Shader.PropertyToID("_BlurOffset");
         }
 
         #endregion
