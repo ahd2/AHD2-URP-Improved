@@ -1272,13 +1272,12 @@ namespace UnityEngine.Rendering.Universal.Internal
             cmd.Blit(source, ShaderConstants._TempTarget);
             
             //模糊
+            gaussianBlurMaterial.SetVector(ShaderConstants._BlurOffset, new Vector4(1.0f / tw, 1.0f / th, 0, 0));
             for (int i = 0; i < m_GaussianBlur.iterations.value; i++)
             {
                 //先横向模糊
-                gaussianBlurMaterial.SetFloat(ShaderConstants._BlurOffset, 1.0f / tw);
                 cmd.Blit(ShaderConstants._TempTarget, ShaderConstants._TempTarget2, gaussianBlurMaterial, 0);
                 //再纵向模糊
-                gaussianBlurMaterial.SetFloat(ShaderConstants._BlurOffset, 1.0f / th);
                 cmd.Blit(ShaderConstants._TempTarget2, ShaderConstants._TempTarget, gaussianBlurMaterial, 1);
             }
             

@@ -8,7 +8,7 @@ Shader "Hidden/Universal Render Pipeline/GaussianBlur"
 	#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 	#include "Packages/com.unity.render-pipelines.universal/Shaders/PostProcessing/Common.hlsl"
 	TEXTURE2D(_MainTex);    SAMPLER(sampler_MainTex);
-	half _BlurOffset;
+	float4 _BlurOffset;
 
 	struct a2v
 	{
@@ -36,9 +36,9 @@ Shader "Hidden/Universal Render Pipeline/GaussianBlur"
 			o.uv = o.uv * float2(1.0, -1.0) + float2(0.0, 1.0);
 		#endif
 		
-		o.uv01 = o.uv.xyxy + _BlurOffset * float4(1, 0, -1, 0);
-		o.uv23 = o.uv.xyxy + _BlurOffset * float4(1, 0, -1, 0) * 2.0;
-		o.uv45 = o.uv.xyxy + _BlurOffset * float4(1, 0, -1, 0) * 6.0;
+		o.uv01 = o.uv.xyxy + _BlurOffset.x * float4(1, 0, -1, 0);
+		o.uv23 = o.uv.xyxy + _BlurOffset.x * float4(1, 0, -1, 0) * 2.0;
+		o.uv45 = o.uv.xyxy + _BlurOffset.x * float4(1, 0, -1, 0) * 6.0;
 		
 		return o;
 	}
@@ -54,9 +54,9 @@ Shader "Hidden/Universal Render Pipeline/GaussianBlur"
 			o.uv = o.uv * float2(1.0, -1.0) + float2(0.0, 1.0);
 		#endif
 		
-		o.uv01 = o.uv.xyxy + _BlurOffset * float4(0, 1, 0, -1);
-		o.uv23 = o.uv.xyxy + _BlurOffset * float4(0, 1, 0, -1) * 2.0;
-		o.uv45 = o.uv.xyxy + _BlurOffset * float4(0, 1, 0, -1) * 6.0;
+		o.uv01 = o.uv.xyxy + _BlurOffset.y * float4(0, 1, 0, -1);
+		o.uv23 = o.uv.xyxy + _BlurOffset.y * float4(0, 1, 0, -1) * 2.0;
+		o.uv45 = o.uv.xyxy + _BlurOffset.y * float4(0, 1, 0, -1) * 6.0;
 		
 		return o;
 	}
