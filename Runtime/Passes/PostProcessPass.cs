@@ -1265,21 +1265,43 @@ namespace UnityEngine.Rendering.Universal.Internal
             
             //毛星云大佬方式
             //申请两个RT（低分辨率RT）
-            cmd.GetTemporaryRT(ShaderConstants._TempTarget, tw, th, 0, FilterMode.Bilinear);
-            cmd.GetTemporaryRT(ShaderConstants._TempTarget2, tw, th, 0, FilterMode.Bilinear);
+            cmd.GetTemporaryRT(ShaderConstants._TempTarget, tw, th, 0, FilterMode.Bilinear, RenderTextureFormat.Default, RenderTextureReadWrite.Default, 1, true);
+            cmd.GetTemporaryRT(ShaderConstants._TempTarget2, tw, th, 0, FilterMode.Bilinear, RenderTextureFormat.Default, RenderTextureReadWrite.Default, 1, true);
             
             //降采样
             cmd.Blit(source, ShaderConstants._TempTarget);
             
             //模糊
-            //先传参数，分别是，单个像素的uv宽度和高度，还有图片分辨率(后面单单传入模糊半径了，因为用Load了)
-            gaussianBlurMaterial.SetVector(ShaderConstants._BlurOffset, new Vector4(m_GaussianBlur.blurRadius.value, m_GaussianBlur.blurRadius.value, tw, th));
+            ComputeShader computeShader = m_Data.shaders.gaussianBlurCS;
+            if (computeShader == null)
+            {
+                Debug.LogErrorFormat($"Missing shader. {GetType().DeclaringType.Name} render pass will not execute. Check for missing reference in the renderer resources.");
+            }
+            
+            int gaussianBlurKernelH = computeShader.FindKernel("GaussianBlurHorizontalMain");
+            int gaussianBlurKernelV = computeShader.FindKernel("GaussianBlurVerticalMain");
+            computeShader.GetKernelThreadGroupSizes(gaussianBlurKernelH, out uint x, out uint y, out uint z);
+            computeShader.GetKernelThreadGroupSizes(gaussianBlurKernelV, out uint x1, out uint y1, out uint z1);
             for (int i = 0; i < m_GaussianBlur.iterations.value; i++)
             {
-                //先横向模糊
-                cmd.Blit(ShaderConstants._TempTarget, ShaderConstants._TempTarget2, gaussianBlurMaterial, 0);
-                //再纵向模糊
-                cmd.Blit(ShaderConstants._TempTarget2, ShaderConstants._TempTarget, gaussianBlurMaterial, 1);
+                
+                cmd.SetComputeTextureParam(computeShader, gaussianBlurKernelH, "_InputTexture", ShaderConstants._TempTarget);
+                cmd.SetComputeTextureParam(computeShader, gaussianBlurKernelH, "_OutputTexture", ShaderConstants._TempTarget2);
+                cmd.SetComputeFloatParam(computeShader, "_BlurRadius", m_GaussianBlur.blurRadius.value);
+                cmd.SetComputeVectorParam(computeShader, "_TextureSize", new Vector4(tw, th, 1f / tw, 1f / th));
+                cmd.DispatchCompute(computeShader, gaussianBlurKernelH,
+                    Mathf.CeilToInt((float)tw / x),
+                    Mathf.CeilToInt((float)th / y),
+                    1);
+                
+                cmd.SetComputeTextureParam(computeShader, gaussianBlurKernelV, "_InputTexture", ShaderConstants._TempTarget2);
+                cmd.SetComputeTextureParam(computeShader, gaussianBlurKernelV, "_OutputTexture", ShaderConstants._TempTarget);
+                cmd.SetComputeFloatParam(computeShader, "_BlurRadius", m_GaussianBlur.blurRadius.value);
+                cmd.SetComputeVectorParam(computeShader, "_TextureSize", new Vector4(tw, th, 1f / tw, 1f / th));
+                cmd.DispatchCompute(computeShader, gaussianBlurKernelV,
+                    Mathf.CeilToInt((float)tw / x1),
+                    Mathf.CeilToInt((float)th / y1),
+                    1);
             }
             
             //升采样
