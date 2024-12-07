@@ -1272,7 +1272,8 @@ namespace UnityEngine.Rendering.Universal.Internal
             cmd.Blit(source, ShaderConstants._TempTarget);
             
             //模糊
-            gaussianBlurMaterial.SetVector(ShaderConstants._BlurOffset, new Vector4(m_GaussianBlur.blurRadius.value / tw, m_GaussianBlur.blurRadius.value / th, 0, 0));
+            //先传参数，分别是，单个像素的uv宽度和高度，还有图片分辨率(后面单单传入模糊半径了，因为用Load了)
+            gaussianBlurMaterial.SetVector(ShaderConstants._BlurOffset, new Vector4(m_GaussianBlur.blurRadius.value, m_GaussianBlur.blurRadius.value, tw, th));
             for (int i = 0; i < m_GaussianBlur.iterations.value; i++)
             {
                 //先横向模糊
