@@ -41,8 +41,16 @@ Shader "Hidden/Universal Render Pipeline/GaussianBlur"
 		o.uv.y *= _BlurOffset.w;
 		
 		o.uv01 = o.uv.xyxy + _BlurOffset.x * float4(1, 0, -1, 0);
+		o.uv01.x = min(o.uv01.x, _BlurOffset.z);//防止超出右
+		o.uv01.z = max(o.uv01.z, 0);//防止超出左
+		
 		o.uv23 = o.uv.xyxy + _BlurOffset.x * float4(1, 0, -1, 0) * 2.0;
+		o.uv23.x = min(o.uv23.x, _BlurOffset.z);//防止超出右
+		o.uv23.z = max(o.uv23.z, 0);//防止超出左
+		
 		o.uv45 = o.uv.xyxy + _BlurOffset.x * float4(1, 0, -1, 0) * 6.0;
+		o.uv45.x = min(o.uv45.x, _BlurOffset.z);//防止超出右
+		o.uv45.z = max(o.uv45.z, 0);//防止超出左
 		
 		return o;
 	}
@@ -63,8 +71,16 @@ Shader "Hidden/Universal Render Pipeline/GaussianBlur"
 		o.uv.y *= _BlurOffset.w;
 		
 		o.uv01 = o.uv.xyxy + _BlurOffset.x * float4(0, 1, 0, -1);
+		o.uv01.y = min(o.uv01.y, _BlurOffset.w);//防止超出上
+		o.uv01.w = max(o.uv01.w, 0);//防止超出下
+		
 		o.uv23 = o.uv.xyxy + _BlurOffset.x * float4(0, 1, 0, -1) * 2.0;
+		o.uv23.y = min(o.uv23.y, _BlurOffset.w);
+		o.uv23.w = max(o.uv23.w, 0);
+		
 		o.uv45 = o.uv.xyxy + _BlurOffset.x * float4(0, 1, 0, -1) * 6.0;
+		o.uv45.y = min(o.uv45.y, _BlurOffset.w);
+		o.uv45.w = max(o.uv45.w, 0);
 		
 		return o;
 	}
