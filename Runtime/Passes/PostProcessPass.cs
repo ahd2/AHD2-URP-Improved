@@ -1280,11 +1280,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             
             int gaussianBlurKernelH = computeShader.FindKernel("GaussianBlurHorizontalMain");
             int gaussianBlurKernelV = computeShader.FindKernel("GaussianBlurVerticalMain");
-            computeShader.GetKernelThreadGroupSizes(gaussianBlurKernelH, out uint x, out uint y, out uint z);
-            computeShader.GetKernelThreadGroupSizes(gaussianBlurKernelV, out uint x1, out uint y1, out uint z1);
             for (int i = 0; i < m_GaussianBlur.iterations.value; i++)
             {
-                
+                computeShader.GetKernelThreadGroupSizes(gaussianBlurKernelH, out uint x, out uint y, out uint z);
                 cmd.SetComputeTextureParam(computeShader, gaussianBlurKernelH, "_InputTexture", ShaderConstants._TempTarget);
                 cmd.SetComputeTextureParam(computeShader, gaussianBlurKernelH, "_OutputTexture", ShaderConstants._TempTarget2);
                 cmd.SetComputeFloatParam(computeShader, "_BlurRadius", m_GaussianBlur.blurRadius.value);
@@ -1294,8 +1292,11 @@ namespace UnityEngine.Rendering.Universal.Internal
                     Mathf.CeilToInt((float)th / y),
                     1);
                 
+                computeShader.GetKernelThreadGroupSizes(gaussianBlurKernelV, out uint x1, out uint y1, out uint z1);
                 cmd.SetComputeTextureParam(computeShader, gaussianBlurKernelV, "_InputTexture", ShaderConstants._TempTarget2);
                 cmd.SetComputeTextureParam(computeShader, gaussianBlurKernelV, "_OutputTexture", ShaderConstants._TempTarget);
+                cmd.SetComputeFloatParam(computeShader, "_BlurRadius", m_GaussianBlur.blurRadius.value);
+                cmd.SetComputeVectorParam(computeShader, "_TextureSize", new Vector4(tw, th, 1f / tw, 1f / th));
                 cmd.DispatchCompute(computeShader, gaussianBlurKernelV,
                     Mathf.CeilToInt((float)tw / x1),
                     Mathf.CeilToInt((float)th / y1),
