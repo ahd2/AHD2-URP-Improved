@@ -28,81 +28,81 @@ static float gaussian17[] =
     0.00002611081194810,
 };
 
-#define MAX_RADIUS 32
-groupshared float3 gs_Color[64 + 2 * MAX_RADIUS];
+//#define MAX_RADIUS 32
+//groupshared float3 gs_Color[64 + 2 * MAX_RADIUS];
 
 [numthreads(64, 1, 1)]
 void GaussianBlurHorizontalMain(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex, uint3 dispatchThreadID : SV_DispatchThreadID)
 {
     int2 currentPosition = dispatchThreadID.xy;
-    int2 tempPosition = clamp(currentPosition, 0, _TextureSize.xy - 1);
-    gs_Color[groupIndex + MAX_RADIUS] = _InputTexture.Load(uint3(tempPosition, 0)).rgb;
+    // int2 tempPosition = clamp(currentPosition, 0, _TextureSize.xy - 1);
+    // gs_Color[groupIndex + MAX_RADIUS] = _InputTexture.Load(uint3(tempPosition, 0)).rgb;
+    //
+    // if (groupIndex < MAX_RADIUS)
+    // {
+    //     int2 extraSample = currentPosition - int2(MAX_RADIUS, 0);
+    //     extraSample = clamp(extraSample, 0, _TextureSize.xy - 1);
+    //     gs_Color[groupIndex] = _InputTexture.Load(uint3(extraSample, 0)).rgb;
+    // }
+    //
+    // if(groupIndex >= 64 - MAX_RADIUS)
+    // {
+    //     int2 extraSample = currentPosition + int2(MAX_RADIUS, 0);
+    //     extraSample = clamp(extraSample, 0, _TextureSize.xy - 1);
+    //     gs_Color[groupIndex + 2 * MAX_RADIUS] = _InputTexture.Load(uint3(extraSample, 0)).rgb;
+    // }
+    // GroupMemoryBarrierWithGroupSync();
+    //
+    // float3 color = 0;
+    // for (uint i = 0; i < 17; i++)
+    // {
+    //     float weight = gaussian17[i];
+    //     float sampleOffset = ((float)i - 8) * _BlurRadius * 0.125;
+    //     int floorInt = floor(sampleOffset);
+    //     float lerpValue = sampleOffset - floorInt;
+    //     float3 sampleColorFloor = gs_Color[groupIndex + MAX_RADIUS + floorInt] ;
+    //     float3 sampleColorCeil = gs_Color[groupIndex + MAX_RADIUS + floorInt + 1];
+    //     float3 sampleColor = lerp(sampleColorFloor, sampleColorCeil, lerpValue);
+    //     color += sampleColor * weight;
+    // }
 
-    if (groupIndex < MAX_RADIUS)
-    {
-        int2 extraSample = currentPosition - int2(MAX_RADIUS, 0);
-        extraSample = clamp(extraSample, 0, _TextureSize.xy - 1);
-        gs_Color[groupIndex] = _InputTexture.Load(uint3(extraSample, 0)).rgb;
-    }
-
-    if(groupIndex >= 64 - MAX_RADIUS)
-    {
-        int2 extraSample = currentPosition + int2(MAX_RADIUS, 0);
-        extraSample = clamp(extraSample, 0, _TextureSize.xy - 1);
-        gs_Color[groupIndex + 2 * MAX_RADIUS] = _InputTexture.Load(uint3(extraSample, 0)).rgb;
-    }
-    GroupMemoryBarrierWithGroupSync();
-
-    float3 color = 0;
-    for (uint i = 0; i < 17; i++)
-    {
-        float weight = gaussian17[i];
-        float sampleOffset = ((float)i - 8) * _BlurRadius * 0.125;
-        int floorInt = floor(sampleOffset);
-        float lerpValue = sampleOffset - floorInt;
-        float3 sampleColorFloor = gs_Color[groupIndex + MAX_RADIUS + floorInt] ;
-        float3 sampleColorCeil = gs_Color[groupIndex + MAX_RADIUS + floorInt + 1];
-        float3 sampleColor = lerp(sampleColorFloor, sampleColorCeil, lerpValue);
-        color += sampleColor * weight;
-    }
-
-    _OutputTexture[dispatchThreadID.xy] = float4(color, 1);
+    _OutputTexture[dispatchThreadID.xy] = _InputTexture.Load(uint3(currentPosition, 0));
 }
 
 [numthreads(1, 64, 1)]
 void GaussianBlurVerticalMain(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex, uint3 dispatchThreadID : SV_DispatchThreadID)
 {
     int2 currentPosition = dispatchThreadID.xy;
-    int2 tempPosition = clamp(currentPosition, 0, _TextureSize.xy - 1);
-    gs_Color[groupIndex + MAX_RADIUS] = _InputTexture.Load(uint3(tempPosition, 0)).rgb;
+    // int2 tempPosition = clamp(currentPosition, 0, _TextureSize.xy - 1);
+    // gs_Color[groupIndex + MAX_RADIUS] = _InputTexture.Load(uint3(tempPosition, 0)).rgb;
+    //
+    // if (groupIndex < MAX_RADIUS)
+    // {
+    //     int2 extraSample = currentPosition - int2(0, MAX_RADIUS);
+    //     extraSample = clamp(extraSample, 0, _TextureSize.xy - 1);
+    //     gs_Color[groupIndex] = _InputTexture.Load(uint3(extraSample, 0)).rgb;
+    // }
+    //
+    // if (groupIndex >= 64 - MAX_RADIUS)
+    // {
+    //     int2 extraSample = currentPosition + int2(0, MAX_RADIUS);
+    //     extraSample = clamp(extraSample, 0, _TextureSize.xy - 1);
+    //     gs_Color[groupIndex + 2 * MAX_RADIUS] = _InputTexture.Load(uint3(extraSample, 0)).rgb;
+    // }
+    // GroupMemoryBarrierWithGroupSync();
+    //
+    // float3 color = 0;
+    // for (uint i = 0; i < 17; i++)
+    // {
+    //     float weight = gaussian17[i];
+    //     float sampleOffset = ((float)i - 8) * _BlurRadius * 0.125;
+    //     int floorInt = floor(sampleOffset);
+    //     float lerpValue = sampleOffset - floorInt;
+    //     float3 sampleColorFloor = gs_Color[groupIndex + MAX_RADIUS + floorInt];
+    //     float3 sampleColorCeil = gs_Color[groupIndex + MAX_RADIUS + floorInt + 1];
+    //     float3 sampleColor = lerp(sampleColorFloor, sampleColorCeil, lerpValue);
+    //     color += sampleColor* weight;
+    // }
 
-    if (groupIndex < MAX_RADIUS)
-    {
-        int2 extraSample = currentPosition - int2(0, MAX_RADIUS);
-        extraSample = clamp(extraSample, 0, _TextureSize.xy - 1);
-        gs_Color[groupIndex] = _InputTexture.Load(uint3(extraSample, 0)).rgb;
-    }
-
-    if (groupIndex >= 64 - MAX_RADIUS)
-    {
-        int2 extraSample = currentPosition + int2(0, MAX_RADIUS);
-        extraSample = clamp(extraSample, 0, _TextureSize.xy - 1);
-        gs_Color[groupIndex + 2 * MAX_RADIUS] = _InputTexture.Load(uint3(extraSample, 0)).rgb;
-    }
-    GroupMemoryBarrierWithGroupSync();
-
-    float3 color = 0;
-    for (uint i = 0; i < 17; i++)
-    {
-        float weight = gaussian17[i];
-        float sampleOffset = ((float)i - 8) * _BlurRadius * 0.125;
-        int floorInt = floor(sampleOffset);
-        float lerpValue = sampleOffset - floorInt;
-        float3 sampleColorFloor = gs_Color[groupIndex + MAX_RADIUS + floorInt];
-        float3 sampleColorCeil = gs_Color[groupIndex + MAX_RADIUS + floorInt + 1];
-        float3 sampleColor = lerp(sampleColorFloor, sampleColorCeil, lerpValue);
-        color += sampleColor* weight;
-    }
-
-    _OutputTexture[dispatchThreadID.xy] = float4(color, 1);
+    _OutputTexture[dispatchThreadID.xy] = _InputTexture.Load(uint3(currentPosition, 0));
 }

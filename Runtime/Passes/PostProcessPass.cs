@@ -1265,8 +1265,8 @@ namespace UnityEngine.Rendering.Universal.Internal
             
             //毛星云大佬方式
             //申请两个RT（低分辨率RT）
-            cmd.GetTemporaryRT(ShaderConstants._TempTarget, tw, th, 0, FilterMode.Bilinear, RenderTextureFormat.Default, RenderTextureReadWrite.Default, 1, true);
-            cmd.GetTemporaryRT(ShaderConstants._TempTarget2, tw, th, 0, FilterMode.Bilinear, RenderTextureFormat.Default, RenderTextureReadWrite.Default, 1, true);
+            cmd.GetTemporaryRT(ShaderConstants._TempTarget, tw, th, 0, FilterMode.Bilinear, RenderTextureFormat.RGB111110Float, RenderTextureReadWrite.sRGB, 1, true);
+            cmd.GetTemporaryRT(ShaderConstants._TempTarget2, tw, th, 0, FilterMode.Bilinear, RenderTextureFormat.RGB111110Float, RenderTextureReadWrite.sRGB, 1, true);
             
             //降采样
             cmd.Blit(source, ShaderConstants._TempTarget);
@@ -1296,8 +1296,6 @@ namespace UnityEngine.Rendering.Universal.Internal
                 
                 cmd.SetComputeTextureParam(computeShader, gaussianBlurKernelV, "_InputTexture", ShaderConstants._TempTarget2);
                 cmd.SetComputeTextureParam(computeShader, gaussianBlurKernelV, "_OutputTexture", ShaderConstants._TempTarget);
-                cmd.SetComputeFloatParam(computeShader, "_BlurRadius", m_GaussianBlur.blurRadius.value);
-                cmd.SetComputeVectorParam(computeShader, "_TextureSize", new Vector4(tw, th, 1f / tw, 1f / th));
                 cmd.DispatchCompute(computeShader, gaussianBlurKernelV,
                     Mathf.CeilToInt((float)tw / x1),
                     Mathf.CeilToInt((float)th / y1),
