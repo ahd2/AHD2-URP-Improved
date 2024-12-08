@@ -47,7 +47,7 @@ void GaussianBlurHorizontalMain(uint3 groupID : SV_GroupID, uint groupIndex : SV
     for (uint i = 0; i < 7; i++)
     {
         float weight = gaussian7[i];
-        float sampleOffset = ((float)i - 3) * _BlurRadius * 0.125;
+        float sampleOffset = ((float)i - 3) * _BlurRadius;
         int floorInt = floor(sampleOffset);
         float lerpValue = sampleOffset - floorInt;
         float3 sampleColorFloor = gs_Color[groupIndex + MAX_RADIUS + floorInt] ;
@@ -85,7 +85,7 @@ void GaussianBlurVerticalMain(uint3 groupID : SV_GroupID, uint groupIndex : SV_G
     for (uint i = 0; i < 7; i++)
     {
         float weight = gaussian7[i];
-        float sampleOffset = ((float)i - 3) * _BlurRadius * 0.125;
+        float sampleOffset = ((float)i - 3) * _BlurRadius;
         int floorInt = floor(sampleOffset);
         float lerpValue = sampleOffset - floorInt;
         float3 sampleColorFloor = gs_Color[groupIndex + MAX_RADIUS + floorInt];
