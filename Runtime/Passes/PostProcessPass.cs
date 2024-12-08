@@ -605,7 +605,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                         {
                             cmd.Blit(GetSource() ,GetDestination(),m_Materials.uber);
                             Swap(ref renderer);
-                            SetupGaussianBlur(cmd, GetSource(), GetDestination(),  m_Materials.gaussianBlur);
+                            SetupGaussianBlurCS(cmd, GetSource(), GetDestination(),  m_Materials.gaussianBlur);
                             Swap(ref renderer);
                             
                             cmd.SetRenderTarget(cameraTarget, colorLoadAction, RenderBufferStoreAction.Store, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
@@ -1257,7 +1257,39 @@ namespace UnityEngine.Rendering.Universal.Internal
         
         #region GaussianBlur
 
-        void SetupGaussianBlur(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier dst, Material gaussianBlurMaterial)
+        void SetupGaussianBlurPS(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier dst, Material gaussianBlurMaterial)
+        {
+            // 同样用一半分辨率的RT来模糊
+            int tw = m_Descriptor.width >> 1;
+            int th = m_Descriptor.height >> 1;
+            
+            //毛星云大佬方式
+            //申请两个RT（低分辨率RT）
+            cmd.GetTemporaryRT(ShaderConstants._TempTarget, tw, th, 0, FilterMode.Bilinear, RenderTextureFormat.RGB111110Float, RenderTextureReadWrite.sRGB, 1, true);
+            cmd.GetTemporaryRT(ShaderConstants._TempTarget2, tw, th, 0, FilterMode.Bilinear, RenderTextureFormat.RGB111110Float, RenderTextureReadWrite.sRGB, 1, true);
+            
+            //降采样
+            cmd.Blit(source, ShaderConstants._TempTarget);
+            
+            //模糊
+            gaussianBlurMaterial.SetVector(ShaderConstants._BlurOffset, new Vector4(m_GaussianBlur.blurRadius.value, m_GaussianBlur.blurRadius.value, tw, th));
+            for (int i = 0; i < m_GaussianBlur.iterations.value; i++)
+            {
+                //先横向模糊
+                cmd.Blit(ShaderConstants._TempTarget, ShaderConstants._TempTarget2, gaussianBlurMaterial, 0);
+                //再纵向模糊
+                cmd.Blit(ShaderConstants._TempTarget2, ShaderConstants._TempTarget, gaussianBlurMaterial, 1);
+            }
+            
+            //升采样
+            cmd.Blit(ShaderConstants._TempTarget, dst);
+            
+            //释放RT（不懂这是正确方式不）
+            cmd.ReleaseTemporaryRT(ShaderConstants._TempTarget);
+            cmd.ReleaseTemporaryRT(ShaderConstants._TempTarget2);
+        }
+        
+        void SetupGaussianBlurCS(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier dst, Material gaussianBlurMaterial)
         {
             // 同样用一半分辨率的RT来模糊
             int tw = m_Descriptor.width >> 1;
