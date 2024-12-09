@@ -1366,12 +1366,11 @@ namespace UnityEngine.Rendering.Universal.Internal
             
             for (int i = 0; i < m_GaussianBlur.iterations.value; i++)
             {
-                //先横向模糊
-                kawaseBlurMaterial.SetVector(ShaderConstants._BlurOffset, new Vector4(m_GaussianBlur.blurRadius.value, m_GaussianBlur.blurRadius.value, 
+                cmd.SetGlobalVector(ShaderConstants._BlurOffset, new Vector4(m_GaussianBlur.blurRadius.value, m_GaussianBlur.blurRadius.value, 
                     0.25f * ((i + 1) * m_GaussianBlur.blurRadius.value) / tw, 0.25f * ((i + 1) * m_GaussianBlur.blurRadius.value) / th));
                 cmd.Blit(ShaderConstants._TempTarget, ShaderConstants._TempTarget2, kawaseBlurMaterial, 0);
-                //再纵向模糊
-                kawaseBlurMaterial.SetVector(ShaderConstants._BlurOffset, new Vector4(m_GaussianBlur.blurRadius.value, m_GaussianBlur.blurRadius.value, 
+                
+                cmd.SetGlobalVector(ShaderConstants._BlurOffset, new Vector4(m_GaussianBlur.blurRadius.value, m_GaussianBlur.blurRadius.value, 
                     0.25f * ((i + 2) * m_GaussianBlur.blurRadius.value) / tw, 0.25f * ((i + 2) * m_GaussianBlur.blurRadius.value) / th));
                 cmd.Blit(ShaderConstants._TempTarget2, ShaderConstants._TempTarget, kawaseBlurMaterial, 0);
             }

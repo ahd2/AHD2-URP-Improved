@@ -8,6 +8,7 @@ Shader "Hidden/Universal Render Pipeline/KawaseBlur"
 	#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 	#include "Packages/com.unity.render-pipelines.universal/Shaders/PostProcessing/Common.hlsl"
 	TEXTURE2D(_MainTex);	SAMPLER(sampler_MainTex);
+
 	float4 _BlurOffset;
 
 	struct a2v
