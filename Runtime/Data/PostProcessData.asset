@@ -35,6 +35,7 @@ MonoBehaviour:
     finalPostPassPS: {fileID: 4800000, guid: c49e63ed1bbcb334780a3bd19dfed403, type: 3}
     gaussianBlurPS: {fileID: 4800000, guid: db9c86924723d3b4fa2437917c864cba, type: 3}
     gaussianBlurCS: {fileID: 7200000, guid: 5dd1052dd377784459dfc67ee7599215, type: 3}
+    kawaseBlurPS: {fileID: 4800000, guid: 187107d54e5cbc845be8d8ff1cb811fc, type: 3}
   textures:
     blueNoise16LTex:
     - {fileID: 2800000, guid: 81200413a40918d4d8702e94db29911c, type: 3}

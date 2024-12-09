@@ -86,6 +86,9 @@ namespace UnityEngine.Rendering.Universal
             
             [Reload("Shaders/PostProcessing/GaussianBlur.compute")]
             public ComputeShader gaussianBlurCS;
+            
+            [Reload("Shaders/PostProcessing/KawaseBlur.shader")]
+            public Shader kawaseBlurPS;
         }
 
         [Serializable, ReloadGroup]

@@ -605,7 +605,8 @@ namespace UnityEngine.Rendering.Universal.Internal
                         {
                             cmd.Blit(GetSource() ,GetDestination(),m_Materials.uber);
                             Swap(ref renderer);
-                            SetupGaussianBlurCS(cmd, GetSource(), GetDestination(),  m_Materials.gaussianBlur);
+                            //SetupGaussianBlurCS(cmd, GetSource(), GetDestination(),  m_Materials.gaussianBlur);
+                            SetupKawaseBlurPS(cmd, GetSource(), GetDestination(),  m_Materials.kawaseBlur);
                             Swap(ref renderer);
                             
                             cmd.SetRenderTarget(cameraTarget, colorLoadAction, RenderBufferStoreAction.Store, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
@@ -1345,6 +1346,45 @@ namespace UnityEngine.Rendering.Universal.Internal
 
         #endregion
 
+        #region KawaseBlur
+        
+        void SetupKawaseBlurPS(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier dst, Material kawaseBlurMaterial)
+        {
+            // 同样用一半分辨率的RT来模糊
+            int tw = m_Descriptor.width >> 1;
+            int th = m_Descriptor.height >> 1;
+            
+            //毛星云大佬方式
+            //申请两个RT（低分辨率RT）
+            cmd.GetTemporaryRT(ShaderConstants._TempTarget, tw, th, 0, FilterMode.Bilinear, RenderTextureFormat.RGB111110Float, RenderTextureReadWrite.sRGB, 1, true);
+            cmd.GetTemporaryRT(ShaderConstants._TempTarget2, tw, th, 0, FilterMode.Bilinear, RenderTextureFormat.RGB111110Float, RenderTextureReadWrite.sRGB, 1, true);
+            
+            //降采样
+            cmd.Blit(source, ShaderConstants._TempTarget);
+            
+            //模糊
+            
+            for (int i = 0; i < m_GaussianBlur.iterations.value; i++)
+            {
+                //先横向模糊
+                kawaseBlurMaterial.SetVector(ShaderConstants._BlurOffset, new Vector4(m_GaussianBlur.blurRadius.value, m_GaussianBlur.blurRadius.value, 
+                    0.25f * ((i + 1) * m_GaussianBlur.blurRadius.value) / tw, 0.25f * ((i + 1) * m_GaussianBlur.blurRadius.value) / th));
+                cmd.Blit(ShaderConstants._TempTarget, ShaderConstants._TempTarget2, kawaseBlurMaterial, 0);
+                //再纵向模糊
+                kawaseBlurMaterial.SetVector(ShaderConstants._BlurOffset, new Vector4(m_GaussianBlur.blurRadius.value, m_GaussianBlur.blurRadius.value, 
+                    0.25f * ((i + 2) * m_GaussianBlur.blurRadius.value) / tw, 0.25f * ((i + 2) * m_GaussianBlur.blurRadius.value) / th));
+                cmd.Blit(ShaderConstants._TempTarget2, ShaderConstants._TempTarget, kawaseBlurMaterial, 0);
+            }
+            
+            //升采样
+            cmd.Blit(ShaderConstants._TempTarget, dst);
+            
+            //释放RT（不懂这是正确方式不）
+            cmd.ReleaseTemporaryRT(ShaderConstants._TempTarget);
+            cmd.ReleaseTemporaryRT(ShaderConstants._TempTarget2);
+        }
+        
+        #endregion
         #region Lens Distortion
 
         void SetupLensDistortion(Material material, bool isSceneView)
@@ -1715,6 +1755,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             public readonly Material finalPass;
             public readonly Material lensFlareDataDriven;
             public readonly Material gaussianBlur;
+            public readonly Material kawaseBlur;
 
             public MaterialLibrary(PostProcessData data)
             {
@@ -1731,6 +1772,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 finalPass = Load(data.shaders.finalPostPassPS);
                 lensFlareDataDriven = Load(data.shaders.LensFlareDataDrivenPS);
                 gaussianBlur = Load(data.shaders.gaussianBlurPS);
+                kawaseBlur = Load(data.shaders.kawaseBlurPS);
             }
 
             Material Load(Shader shader)
@@ -1762,6 +1804,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 CoreUtils.Destroy(uber);
                 CoreUtils.Destroy(finalPass);
                 CoreUtils.Destroy(gaussianBlur);
+                CoreUtils.Destroy(kawaseBlur);
             }
         }
 
